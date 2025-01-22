@@ -90,7 +90,7 @@ class MCoverPrintClient implements IAdvancedTestResultClient
 	var client:ICoverageTestResultClient;
 
 	var mcoverLogger:CoverageLogger;
-	var mcoverClient:mcover.coverage.AdvancedCoverageReportClient;
+	var mcoverClient:mcover.coverage.CoverageReportClient.AdvancedCoverageReportClient;
 
 	var coveredClasses:StringMap<Clazz>;
 	var currentCoveredClass:String;
