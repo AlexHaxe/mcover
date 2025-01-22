@@ -56,7 +56,7 @@ class NodeMock extends AbstractNode
 		cls.name = "clazz";
 		return cls;
 	}
-	
+
 	static public function createBranch(?id:Int=0):Branch
 	{
 		var branch = createBlock(Branch, id);
@@ -86,7 +86,7 @@ class NodeMock extends AbstractNode
 	static public function createBranchResult(?branch:Branch):BranchResult
 	{
 		if(branch == null) branch = createBranch();
-		
+
 		return {id:branch.id,trueCount:branch.trueCount, falseCount:branch.falseCount, total:branch.totalCount};
 	}
 

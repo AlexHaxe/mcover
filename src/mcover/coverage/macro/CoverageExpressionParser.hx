@@ -1,16 +1,16 @@
 /****
 * Copyright 2019 Massive Interactive. All rights reserved.
-* 
+*
 * Redistribution and use in source and binary forms, with or without modification, are
 * permitted provided that the following conditions are met:
-* 
+*
 *    1. Redistributions of source code must retain the above copyright notice, this list of
 *       conditions and the following disclaimer.
-* 
+*
 *    2. Redistributions in binary form must reproduce the above copyright notice, this list
 *       of conditions and the following disclaimer in the documentation and/or other materials
 *       provided with the distribution.
-* 
+*
 * THIS SOFTWARE IS PROVIDED BY MASSIVE INTERACTIVE ``AS IS'' AND ANY EXPRESS OR IMPLIED
 * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
 * FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL MASSIVE INTERACTIVE OR
@@ -20,7 +20,7 @@
 * ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-* 
+*
 * The views and conclusions contained in the software and documentation are those of the
 * authors and should not be interpreted as representing official policies, either expressed
 * or implied, of Massive Interactive.
@@ -41,6 +41,7 @@ import haxe.macro.Compiler;
 import haxe.macro.Type;
 import mcover.macro.ClassParser;
 import mcover.coverage.DataTypes;
+import mcover.coverage.data.AbstractBlock;
 import mcover.macro.MacroUtil;
 import mcover.macro.ClassInfo;
 import mcover.macro.ExpressionParser;
@@ -51,10 +52,10 @@ import sys.FileSystem;
 
 	public var ignoreFieldMeta(default, default):String;
 	public var includeFieldMeta(default, default):String;
-	
+
 	static var statementCount:Int = 0;
 	static var branchCount:Int = 0;
-	static public var IS_WINDOWS = Sys.systemName() == "Windows"; 
+	static public var IS_WINDOWS = Sys.systemName() == "Windows";
 
 	public var target(default, default):ClassParser;
 
@@ -77,7 +78,7 @@ import sys.FileSystem;
 
 	/**
 	Wraps code branches and statement blocks with coverage logs
-	
+
 	@param expr 		the current expression
 	@param target 		the current ClassParser instance
 	@return the updated expression
@@ -99,13 +100,13 @@ import sys.FileSystem;
 				econd = createBranchCoverageExpr(econd);
 				expr.expr = EWhile(econd, e, normalWhile);
 			}
-			case ETernary(econd, eif, eelse): 
+			case ETernary(econd, eif, eelse):
 			{
 				//e.g. var n = (1 + 1 == 2) ? 4 : 5;
 				econd = createBranchCoverageExpr(econd);
 				expr.expr = ETernary(econd, eif, eelse);
 			}
-			case EBlock(exprs): 
+			case EBlock(exprs):
 			{
 				//e.g. {...}
 				parseEBlock(expr, exprs);
@@ -128,7 +129,7 @@ import sys.FileSystem;
 	{
 		if(exprs.length == 0)
 		{
-			//ensure empty methods are still covered (e.g. empty constructor) 
+			//ensure empty methods are still covered (e.g. empty constructor)
 			if(expr != target.functionStack[target.functionStack.length-1].expr) return;
 		}
 
@@ -143,7 +144,7 @@ import sys.FileSystem;
 
 		var coverageExpr = createBlockCoverageExpr(expr, startPos, endPos);
 		exprs.unshift(coverageExpr);
-		
+
 		expr.expr = EBlock(exprs);
 	}
 
@@ -153,12 +154,12 @@ import sys.FileSystem;
 		switch(op)
 		{
 			case OpBoolOr:
-				
+
 				e1 = createBranchCoverageExpr(e1);
 				e2 = createBranchCoverageExpr(e2);
-			
+
 			default: null;//debug(expr);
-		}	
+		}
 		expr.expr = EBinop(op, e1, e2);
 	}
 
@@ -173,23 +174,23 @@ import sys.FileSystem;
 	function createBlockCoverageExpr(expr:Expr, startPos:Position, endPos:Position):Expr
 	{
 		var block = createCodeBlockReference(startPos, endPos, false);
-		
+
 		var blockId = Std.string(block.id);
 
 		var pos = startPos;
-		
+
 		var baseExpr = getReferenceToLogger(pos);
 		pos = baseExpr.pos;
 
 		var eField = EField(baseExpr, "logStatement");
 		pos = MacroUtil.incrementPos(pos, 13);
 		var fieldExpr = {expr:eField, pos:pos};
-		
+
 		pos = MacroUtil.incrementPos(pos, blockId.length);
 		var arg1 = {expr:EConst(CInt(blockId)), pos:pos};
 
 		pos = MacroUtil.incrementPos(pos, 2);
-		
+
 		return {expr:ECall(fieldExpr, [arg1]), pos:pos};
 	}
 
@@ -200,7 +201,7 @@ import sys.FileSystem;
 	{
 		var pos = expr.pos;
 		var block = createCodeBlockReference(pos, pos, true);
-	
+
 		var blockId = Std.string(block.id);
 
 		var baseExpr = getReferenceToLogger(pos);
@@ -209,11 +210,11 @@ import sys.FileSystem;
 		var eField = EField(baseExpr, "logBranch");
 		pos = MacroUtil.incrementPos(pos, 4);
 		var fieldExpr = {expr:eField, pos:pos};
-		
+
 		var args:Array<Expr> = [];
 
 		pos = MacroUtil.incrementPos(pos, blockId.length);
-	
+
 		args.push({expr:EConst(CInt(blockId)), pos:pos});
 
 		pos = MacroUtil.incrementPos(pos, 5);
@@ -224,7 +225,7 @@ import sys.FileSystem;
 			pos = MacroUtil.incrementPos(pos, 5);
 			args.push({expr:compareExpr.expr, pos:pos});
 		}
-		
+
 		expr.expr = ECall(fieldExpr, args);
 		return expr;
 	}
@@ -236,7 +237,7 @@ import sys.FileSystem;
 		var strict = true;
 
 		file = FileSystem.fullPath(file);
-		
+
 
 		var posFile:String = null;
 		var classFile:String = null;
@@ -273,7 +274,7 @@ import sys.FileSystem;
 		{
 
 			if(file.indexOf(cp) == 0)
-			{	
+			{
 				if(strict)
 					return createReference(cp, file, startPos, endPos, isBranch, null, classFile);
 
@@ -281,7 +282,7 @@ import sys.FileSystem;
 
 				//the current file pos file location doesn't match the class being compiled.
 				//this case needs to be handled for mpartial macros
-				
+
 				var info = target.info.clone();
 
 				var slash = IS_WINDOWS ? "\\" : "/";
@@ -292,7 +293,7 @@ import sys.FileSystem;
 				if(file.indexOf(packagePath) != -1)
 				{
 					var temp = file.split(packagePath);
-					
+
 					var fileName = temp.pop();
 					var fileClassPath = temp.join(packagePath);//in case package dir repeated in full path
 
@@ -309,7 +310,7 @@ import sys.FileSystem;
 
 					info.methodName = target.info.methodName;
 				}
-				
+
 				return createReference(cp, file, startPos, endPos, isBranch, info, alternateLocation, true);
 			}
 		}
@@ -327,7 +328,7 @@ import sys.FileSystem;
 			}
 		}
 
-		
+
 		var error = "Unable to find referenced file (" + file + ") or target file (" + classFile + ") in any class paths.";
 		error += "\n    Location: " + target.info.location;
 		error += "\n    Referenced pos: " + Std.string(startPos);
@@ -346,7 +347,7 @@ import sys.FileSystem;
 		if(info == null) info = target.info;
 
 		var block:AbstractBlock;
-		
+
 		if(isBranch)
 		{
 			block = new Branch();
@@ -397,7 +398,7 @@ import sys.FileSystem;
 		{
 			// match everything before line number as path
 			// we can't simply split on ":" because
-			// on windows, paths contain ":" 
+			// on windows, paths contain ":"
 			var r = ~/^.+:(\d+)/;
 			r.match(posString);
 
@@ -479,7 +480,7 @@ import sys.FileSystem;
 		#else
 		var eType = EType(identFieldExpr2, "MCoverage");
 		#end
-		
+
 		pos = MacroUtil.incrementPos(pos, 5);
 		var typeExpr = {expr:eType, pos:pos};
 
